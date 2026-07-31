@@ -32,14 +32,20 @@ export type BusinessGroup = {
   projects: Project[];
 };
 
-export type PendingAction = {
+export type StatusName = "운영중" | "진행중" | "계획단계";
+
+export type BoardItem = {
   id: string;
   name: string;
   groupName: string;
-  groupSortOrder: number;
   priority: Priority;
   nextAction: string;
   effectiveProgress: number;
+};
+
+export type StatusColumn = {
+  status: StatusName;
+  items: BoardItem[];
 };
 
 export type ContentItem = {
@@ -58,12 +64,18 @@ export type SummaryStat = {
 export type DashboardData = {
   businessGroups: BusinessGroup[];
   allProjects: Project[];
-  pendingActions: PendingAction[];
+  statusBoard: StatusColumn[];
   contentHistory: ContentItem[];
   summaryStats: SummaryStat[];
 };
 
 const PRIORITY_ORDER: Record<Priority, number> = { 상: 0, 중: 1, 하: 2 };
+
+function statusOf(progress: number): StatusName {
+  if (progress >= 80) return "운영중";
+  if (progress >= 30) return "진행중";
+  return "계획단계";
+}
 
 function computeEffective(
   project: { progress: number; next_action: string; completed_override: boolean },
@@ -112,27 +124,30 @@ export async function getDashboardData(): Promise<DashboardData> {
     projects: allProjects.filter((p) => p.group_id === group.id),
   }));
 
-  const pendingActions: PendingAction[] = allProjects
-    .filter((p) => p.effectiveProgress < 100)
-    .map((p) => {
-      const group = groups.find((g) => g.id === p.group_id);
-      return {
-        id: p.id,
-        name: p.name,
-        groupName: group?.name ?? "",
-        groupSortOrder: group?.sort_order ?? 0,
-        priority: p.priority,
-        nextAction: p.effectiveNextAction,
-        effectiveProgress: p.effectiveProgress,
-      };
-    })
-    .sort((a, b) => {
-      const byGroup = a.groupSortOrder - b.groupSortOrder;
-      if (byGroup !== 0) return byGroup;
-      const byPriority = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-      if (byPriority !== 0) return byPriority;
-      return a.name.localeCompare(b.name);
-    });
+  const boardItems: BoardItem[] = allProjects.map((p) => {
+    const group = groups.find((g) => g.id === p.group_id);
+    return {
+      id: p.id,
+      name: p.name,
+      groupName: group?.name ?? "",
+      priority: p.priority,
+      nextAction: p.effectiveNextAction,
+      effectiveProgress: p.effectiveProgress,
+    };
+  });
+
+  const byPriorityThenName = (a: BoardItem, b: BoardItem) => {
+    const byPriority = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+    if (byPriority !== 0) return byPriority;
+    return a.name.localeCompare(b.name);
+  };
+
+  const statusBoard: StatusColumn[] = (["운영중", "진행중", "계획단계"] as const).map((status) => ({
+    status,
+    items: boardItems
+      .filter((item) => statusOf(item.effectiveProgress) === status)
+      .sort(byPriorityThenName),
+  }));
 
   const completed = allProjects.filter((p) => p.effectiveProgress >= 80).length;
   const planning = allProjects.filter((p) => p.effectiveProgress < 30).length;
@@ -148,7 +163,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   return {
     businessGroups,
     allProjects,
-    pendingActions,
+    statusBoard,
     contentHistory: (contentRes.data ?? []) as ContentItem[],
     summaryStats,
   };
