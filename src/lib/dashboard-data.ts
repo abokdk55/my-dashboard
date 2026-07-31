@@ -32,11 +32,12 @@ export type BusinessGroup = {
   projects: Project[];
 };
 
-export type TopAction = {
+export type PendingAction = {
   id: string;
-  title: string;
-  detail: string;
-  sort_order: number;
+  name: string;
+  groupName: string;
+  priority: Priority;
+  nextAction: string;
 };
 
 export type ContentItem = {
@@ -55,10 +56,12 @@ export type SummaryStat = {
 export type DashboardData = {
   businessGroups: BusinessGroup[];
   allProjects: Project[];
-  topActions: TopAction[];
+  pendingActions: PendingAction[];
   contentHistory: ContentItem[];
   summaryStats: SummaryStat[];
 };
+
+const PRIORITY_ORDER: Record<Priority, number> = { 상: 0, 중: 1, 하: 2 };
 
 function computeEffective(
   project: { progress: number; next_action: string; completed_override: boolean },
@@ -82,31 +85,45 @@ function computeEffective(
 export async function getDashboardData(): Promise<DashboardData> {
   const db = supabaseAdmin();
 
-  const [groupsRes, projectsRes, stepsRes, topActionsRes, contentRes] = await Promise.all([
+  const [groupsRes, projectsRes, stepsRes, contentRes] = await Promise.all([
     db.from("dashboard_business_groups").select("*").order("sort_order"),
     db.from("dashboard_projects").select("*").order("sort_order"),
     db.from("dashboard_steps").select("*").order("sort_order"),
-    db.from("dashboard_top_actions").select("*").order("sort_order"),
     db.from("dashboard_content_history").select("*").order("sort_order"),
   ]);
 
   if (groupsRes.error) throw groupsRes.error;
   if (projectsRes.error) throw projectsRes.error;
   if (stepsRes.error) throw stepsRes.error;
-  if (topActionsRes.error) throw topActionsRes.error;
   if (contentRes.error) throw contentRes.error;
 
   const allSteps = (stepsRes.data ?? []) as Step[];
+  const groups = groupsRes.data ?? [];
 
   const allProjects: Project[] = (projectsRes.data ?? []).map((p) => {
     const steps = allSteps.filter((s) => s.project_id === p.id);
     return { ...p, ...computeEffective(p, steps) };
   });
 
-  const businessGroups: BusinessGroup[] = (groupsRes.data ?? []).map((group) => ({
+  const businessGroups: BusinessGroup[] = groups.map((group) => ({
     ...group,
     projects: allProjects.filter((p) => p.group_id === group.id),
   }));
+
+  const pendingActions: PendingAction[] = allProjects
+    .filter((p) => p.effectiveProgress < 100)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      groupName: groups.find((g) => g.id === p.group_id)?.name ?? "",
+      priority: p.priority,
+      nextAction: p.effectiveNextAction,
+    }))
+    .sort((a, b) => {
+      const byPriority = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+      if (byPriority !== 0) return byPriority;
+      return a.name.localeCompare(b.name);
+    });
 
   const completed = allProjects.filter((p) => p.effectiveProgress >= 80).length;
   const planning = allProjects.filter((p) => p.effectiveProgress < 30).length;
@@ -122,7 +139,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   return {
     businessGroups,
     allProjects,
-    topActions: (topActionsRes.data ?? []) as TopAction[],
+    pendingActions,
     contentHistory: (contentRes.data ?? []) as ContentItem[],
     summaryStats,
   };

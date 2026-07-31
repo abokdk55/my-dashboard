@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import TodayDate from "@/components/TodayDate";
 import StatCard from "@/components/StatCard";
-import TopActions from "@/components/TopActions";
+import PendingActionsList from "@/components/PendingActionsList";
 import AutomationChart from "@/components/AutomationChart";
 import BusinessGroupCard from "@/components/BusinessGroupCard";
 import ContentHistory from "@/components/ContentHistory";
@@ -16,7 +16,7 @@ export default async function Home() {
     redirect("/login");
   }
 
-  const { businessGroups, allProjects, topActions, contentHistory, summaryStats } =
+  const { businessGroups, allProjects, pendingActions, contentHistory, summaryStats } =
     await getDashboardData();
 
   return (
@@ -40,7 +40,7 @@ export default async function Home() {
         </header>
 
         <section>
-          <TopActions actions={topActions} />
+          <PendingActionsList actions={pendingActions} />
         </section>
 
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
