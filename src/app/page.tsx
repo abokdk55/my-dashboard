@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import TodayDate from "@/components/TodayDate";
 import StatCard from "@/components/StatCard";
 import StatusBoard from "@/components/StatusBoard";
@@ -28,14 +29,22 @@ export default async function Home() {
             <TodayDate />
           </div>
           {REQUIRE_LOGIN && (
-            <form action={logout}>
-              <button
-                type="submit"
+            <div className="flex items-center gap-2">
+              <Link
+                href="/change-password"
                 className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm ring-1 ring-slate-100 hover:text-slate-700"
               >
-                로그아웃
-              </button>
-            </form>
+                비밀번호 변경
+              </Link>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm ring-1 ring-slate-100 hover:text-slate-700"
+                >
+                  로그아웃
+                </button>
+              </form>
+            </div>
           )}
         </header>
 

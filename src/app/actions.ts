@@ -2,7 +2,13 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createSession, clearSession, isAuthenticated, verifyPassword } from "@/lib/auth";
+import {
+  createSession,
+  clearSession,
+  isAuthenticated,
+  verifyPassword,
+  changePassword as changePasswordInStore,
+} from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export type LoginState = { error: string } | null;
@@ -12,7 +18,7 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
 
   let valid = false;
   try {
-    valid = verifyPassword(password);
+    valid = await verifyPassword(password);
   } catch {
     return { error: "서버 설정에 문제가 있어요. 관리자에게 문의해줘." };
   }
@@ -67,4 +73,39 @@ export async function updateProjectAction(
 
   revalidatePath("/");
   return null;
+}
+
+export type ChangePasswordState = { error: string } | { success: true } | null;
+
+export async function changePasswordAction(
+  _prevState: ChangePasswordState,
+  formData: FormData
+): Promise<ChangePasswordState> {
+  if (!(await isAuthenticated())) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const currentPassword = String(formData.get("current_password") ?? "");
+  const newPassword = String(formData.get("new_password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
+
+  let currentValid = false;
+  try {
+    currentValid = await verifyPassword(currentPassword);
+  } catch {
+    return { error: "서버 설정에 문제가 있어요. 관리자에게 문의해줘." };
+  }
+
+  if (!currentValid) {
+    return { error: "현재 비밀번호가 맞지 않아요." };
+  }
+  if (newPassword.length < 4) {
+    return { error: "새 비밀번호는 4자 이상으로 정해줘." };
+  }
+  if (newPassword !== confirmPassword) {
+    return { error: "새 비밀번호 확인이 서로 달라." };
+  }
+
+  await changePasswordInStore(newPassword);
+  return { success: true };
 }
