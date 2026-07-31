@@ -1,4 +1,4 @@
-import type { SummaryStat } from "@/lib/work-data";
+import type { SummaryStat } from "@/lib/dashboard-data";
 
 export default function StatCard({ label, value, sublabel }: SummaryStat) {
   return (

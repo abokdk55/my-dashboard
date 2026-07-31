@@ -1,5 +1,5 @@
-import type { BusinessGroup } from "@/lib/work-data";
-import PriorityBadge from "@/components/PriorityBadge";
+import type { BusinessGroup } from "@/lib/dashboard-data";
+import ProjectRow from "@/components/ProjectRow";
 
 export default function BusinessGroupCard({ name, description, projects }: BusinessGroup) {
   return (
@@ -9,29 +9,7 @@ export default function BusinessGroupCard({ name, description, projects }: Busin
 
       <div className="mt-4 flex flex-col gap-4">
         {projects.map((project) => (
-          <div key={project.name} className="border-t border-slate-50 pt-4 first:border-0 first:pt-0">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-medium text-slate-800">{project.name}</p>
-              <PriorityBadge priority={project.priority} />
-            </div>
-
-            <div className="mt-2 flex items-center gap-3">
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                <div
-                  className="h-full rounded-full bg-indigo-500"
-                  style={{ width: `${project.progress}%` }}
-                />
-              </div>
-              <span className="w-10 shrink-0 text-right text-xs font-medium text-slate-500">
-                {project.progress}%
-              </span>
-            </div>
-
-            <p className="mt-2 text-xs text-slate-500">
-              <span className="font-medium text-slate-600">다음 액션 · </span>
-              {project.nextAction}
-            </p>
-          </div>
+          <ProjectRow key={project.id} project={project} />
         ))}
       </div>
     </div>

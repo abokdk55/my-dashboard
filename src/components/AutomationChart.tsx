@@ -10,7 +10,7 @@ import {
   Tooltip,
   Cell,
 } from "recharts";
-import { allProjects } from "@/lib/work-data";
+import type { Project } from "@/lib/dashboard-data";
 
 const barColor = (progress: number) => {
   if (progress >= 80) return "#4f46e5";
@@ -18,10 +18,10 @@ const barColor = (progress: number) => {
   return "#c7d2fe";
 };
 
-export default function AutomationChart() {
-  const data = [...allProjects]
-    .sort((a, b) => b.progress - a.progress)
-    .map((p) => ({ name: p.name, progress: p.progress }));
+export default function AutomationChart({ projects }: { projects: Project[] }) {
+  const data = [...projects]
+    .sort((a, b) => b.effectiveProgress - a.effectiveProgress)
+    .map((p) => ({ name: p.name, progress: p.effectiveProgress }));
 
   return (
     <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-100">

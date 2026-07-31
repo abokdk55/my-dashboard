@@ -1,4 +1,4 @@
-import type { Priority } from "@/lib/work-data";
+import type { Priority } from "@/lib/dashboard-data";
 
 const styles: Record<Priority, string> = {
   상: "bg-rose-50 text-rose-700 ring-rose-200",
