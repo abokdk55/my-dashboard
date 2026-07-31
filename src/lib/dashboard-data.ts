@@ -121,7 +121,13 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const businessGroups: BusinessGroup[] = groups.map((group) => ({
     ...group,
-    projects: allProjects.filter((p) => p.group_id === group.id),
+    projects: allProjects
+      .filter((p) => p.group_id === group.id)
+      .sort((a, b) => {
+        const byPriority = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+        if (byPriority !== 0) return byPriority;
+        return a.sort_order - b.sort_order;
+      }),
   }));
 
   const boardItems: BoardItem[] = allProjects.map((p) => {
