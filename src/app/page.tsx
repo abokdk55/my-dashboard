@@ -53,7 +53,7 @@ export default async function Home() {
           <AutomationChart projects={allProjects} />
         </section>
 
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <section className="flex flex-col gap-4">
           {businessGroups.map((group) => (
             <BusinessGroupCard key={group.id} {...group} />
           ))}
