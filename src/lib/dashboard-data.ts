@@ -36,8 +36,10 @@ export type PendingAction = {
   id: string;
   name: string;
   groupName: string;
+  groupSortOrder: number;
   priority: Priority;
   nextAction: string;
+  effectiveProgress: number;
 };
 
 export type ContentItem = {
@@ -112,14 +114,21 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const pendingActions: PendingAction[] = allProjects
     .filter((p) => p.effectiveProgress < 100)
-    .map((p) => ({
-      id: p.id,
-      name: p.name,
-      groupName: groups.find((g) => g.id === p.group_id)?.name ?? "",
-      priority: p.priority,
-      nextAction: p.effectiveNextAction,
-    }))
+    .map((p) => {
+      const group = groups.find((g) => g.id === p.group_id);
+      return {
+        id: p.id,
+        name: p.name,
+        groupName: group?.name ?? "",
+        groupSortOrder: group?.sort_order ?? 0,
+        priority: p.priority,
+        nextAction: p.effectiveNextAction,
+        effectiveProgress: p.effectiveProgress,
+      };
+    })
     .sort((a, b) => {
+      const byGroup = a.groupSortOrder - b.groupSortOrder;
+      if (byGroup !== 0) return byGroup;
       const byPriority = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
       if (byPriority !== 0) return byPriority;
       return a.name.localeCompare(b.name);
