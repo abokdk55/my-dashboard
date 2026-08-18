@@ -20,8 +20,18 @@ export type Project = {
   next_action: string;
   completed_override: boolean;
   sort_order: number;
+  link_url: string | null;
+  last_auto_check_at: string | null;
   effectiveProgress: number;
   effectiveNextAction: string;
+};
+
+export type ProjectActivity = {
+  id: string;
+  project_id: string;
+  title: string;
+  url: string | null;
+  published_at: string;
 };
 
 export type BusinessGroup = {
@@ -179,18 +189,26 @@ export type ProjectDetail = {
   project: Project;
   group: { id: string; name: string };
   steps: Step[];
+  activity: ProjectActivity[];
 };
 
 export async function getProjectDetail(id: string): Promise<ProjectDetail | null> {
   const db = supabaseAdmin();
 
-  const [projectRes, stepsRes] = await Promise.all([
+  const [projectRes, stepsRes, activityRes] = await Promise.all([
     db.from("dashboard_projects").select("*").eq("id", id).single(),
     db.from("dashboard_steps").select("*").eq("project_id", id).order("sort_order"),
+    db
+      .from("dashboard_project_activity")
+      .select("*")
+      .eq("project_id", id)
+      .order("published_at", { ascending: false })
+      .limit(10),
   ]);
 
   if (projectRes.error || !projectRes.data) return null;
   if (stepsRes.error) throw stepsRes.error;
+  if (activityRes.error) throw activityRes.error;
 
   const steps = (stepsRes.data ?? []) as Step[];
   const project: Project = { ...projectRes.data, ...computeEffective(projectRes.data, steps) };
@@ -202,5 +220,5 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
     .single();
   if (groupRes.error || !groupRes.data) return null;
 
-  return { project, group: groupRes.data, steps };
+  return { project, group: groupRes.data, steps, activity: (activityRes.data ?? []) as ProjectActivity[] };
 }

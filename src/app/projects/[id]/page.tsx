@@ -2,10 +2,12 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { isAuthenticated } from "@/lib/auth";
 import { getProjectDetail } from "@/lib/dashboard-data";
+import { relativeTimeFromNow } from "@/lib/format";
 import PrioritySelector from "@/components/PrioritySelector";
 import StepChecklist from "@/components/StepChecklist";
 import CompletedToggle from "@/components/CompletedToggle";
 import ManualFallback from "@/components/ManualFallback";
+import ProjectActivityList from "@/components/ProjectActivityList";
 
 const REQUIRE_LOGIN = process.env.REQUIRE_LOGIN === "true";
 
@@ -22,7 +24,7 @@ export default async function ProjectDetailPage({
   const detail = await getProjectDetail(id);
   if (!detail) notFound();
 
-  const { project, group, steps } = detail;
+  const { project, group, steps, activity } = detail;
 
   return (
     <div className="min-h-screen w-full bg-[#f8fafc] px-4 py-8 sm:px-8">
@@ -32,8 +34,28 @@ export default async function ProjectDetailPage({
         </Link>
 
         <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
-          <p className="text-xs text-slate-400">{group.name}</p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-900">{project.name}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs text-slate-400">{group.name}</p>
+              <h1 className="mt-1 text-xl font-semibold text-slate-900">{project.name}</h1>
+            </div>
+            {project.link_url && (
+              <a
+                href={project.link_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-100"
+              >
+                바로가기 ↗
+              </a>
+            )}
+          </div>
+
+          {project.last_auto_check_at && (
+            <p className="mt-1 text-[11px] text-slate-400">
+              마지막 자동 업데이트: {relativeTimeFromNow(project.last_auto_check_at)}
+            </p>
+          )}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <PrioritySelector projectId={project.id} priority={project.priority} />
@@ -61,6 +83,8 @@ export default async function ProjectDetailPage({
               nextAction={project.next_action}
             />
           )}
+
+          <ProjectActivityList items={activity} />
         </div>
       </div>
     </div>

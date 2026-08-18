@@ -16,6 +16,7 @@ export default function BusinessGroupCard({ name, description, projects }: Busin
             priority={project.priority}
             nextAction={project.effectiveNextAction}
             progress={project.effectiveProgress}
+            linkUrl={project.link_url}
           />
         ))}
       </div>
