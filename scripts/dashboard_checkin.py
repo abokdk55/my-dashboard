@@ -7,6 +7,8 @@
   DASHBOARD_API_KEY    .env.local의 AUTOMATION_API_KEY와 동일한 값
 """
 
+from __future__ import annotations
+
 import os
 import requests
 
